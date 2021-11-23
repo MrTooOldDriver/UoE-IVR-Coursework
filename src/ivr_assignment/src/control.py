@@ -13,18 +13,18 @@ import zmq.utils.constant_names
 # joint4_cmd_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
 
 
-class Q:
-    theta = 0
-    alpha = 0
-    a = 0
-    d = 0
+# class Q:
+#     theta = 0
+#     alpha = 0
+#     a = 0
+#     d = 0
 
 
-def fk_end_effector_pos(q):
+def homogeneous_mat(q):
 
     As = []
 
-        # Rotation on z axis
+    # Rotation on z axis
     As.append(np.array(
         [[np.cos(q[0]), -np.sin(q[0]), 0, 0],
          [np.sin(q[0]), np.cos(q[0]), 0, 0],
@@ -53,19 +53,10 @@ def fk_end_effector_pos(q):
     return H
 
 
+
 # For testing purposes
 if __name__ == '__main__':
-
-    # qs = []
-    # for i in [4, 3.2, 2.8]:
-    #     q = Q()
-    #     q.theta = 1
-    #     q.a = i
-    #
-    #     qs.append(q)
-
     q = [1, 1, 1, 1]
-
-    H = fk_end_effector_pos(q)
+    H = homogeneous_mat(q)
     print(H)
 
