@@ -1,17 +1,19 @@
+#!/usr/bin/env python3
+
 import numpy
 import numpy as np
-# import roslib
-# import sys
-# import rospy
+import roslib
+import sys
+import rospy
 import cv2
 import numpy as np
 from sympy import sin, cos, Matrix
 from sympy.abc import alpha, beta, gamma
 import zmq.utils.constant_names
+from std_msgs.msg import Float64MultiArray, Float64
+from target import target_publisher
 
 
-# from std_msgs.msg import Float64MultiArray, Float64
-#
 # # initialize a publisher for end effector target positions
 # joint2_cmd_pub = rospy.Publisher("/robot/joint2_position_controller/command", Float64, queue_size=10)
 # joint3_cmd_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
@@ -24,33 +26,51 @@ import zmq.utils.constant_names
 #     a = 0
 #     d = 0
 
+def open_loop():
+
+    # Defines publisher and subscriber
+    # initialize the node named
+    rospy.init_node('target_publisher', anonymous=True)
+    rate = rospy.Rate(50)  # 50hz
+
+    # initialize publishers and subscribers for end effector target positions
+    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
+    # angle_1 = rospy.Subscriber("joint_angle_1", Float64MultiArray, )
+    # angle_3 = rospy.Subscriber("joint_angle_3", Float64MultiArray, )
+    # angle_4 = rospy.Subscriber("joint_angle_4", Float64MultiArray, )
+
+    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
+    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
+
+    robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
+    robot_joint2_pub = rospy.Publisher("/robot/joint2_position_controller/command", Float64, queue_size=10)
+    robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
+
+    t0 = rospy.get_time()
+
 
 def get_homogeneous_mat(q):
 
-    As = []
-
-    # Rotation on z axis
-    As.append(np.array(
+    As = [np.array(
         [[np.cos(q[0]), -np.sin(q[0]), 0, 0], [np.sin(q[0]), np.cos(q[0]), 0, 0],
          [0, 0, 1, 0], [0, 0, 0, 1]]
-    ))
-    # Rotation on x axis
-    As.append(np.array(
+    ), np.array(
         [[1, 0, 0, 0], [0, np.cos(q[2]), -np.sin(q[2]), 0],
          [0, np.sin(q[2]), np.cos(q[2]), 4], [0, 0, 0, 1]]
-    ))
-    # Rotation on y axis
-    As.append(np.array(
+    ), np.array(
         [[np.cos(q[3]), 0, np.sin(q[3]), 0], [0, 1, 0, 0],
          [-np.sin(q[3]), 0, np.cos(q[3]), 3.2], [0, 0, 0, 1]]
-    ))
-    # Transform to the end effector
-    As.append(np.array(
+    ), np.array(
         [[1, 0, 0, 0],
          [0, 1, 0, 0],
          [0, 0, 1, 2.8],
          [0, 0, 0, 1]]
-    ))
+    )]
+
+    # Rotation on z axis
+    # Rotation on x axis
+    # Rotation on y axis
+    # Transform to the end effector
 
     H = As[0]
     for i in range(1, len(As)):
@@ -70,7 +90,7 @@ def get_jacobian(q):
                 2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
                 2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
     J = H.jacobian(Matrix([alpha, beta, gamma]))
-    return np.matrix(J.subs([(alpha, q[0]), (beta, q[1]), (gamma, q[2])]).evalf(), dtype='float')
+    return np.matrix(J.subs([(alpha, q[0]), (beta, q[2]), (gamma, q[3])]).evalf(), dtype='float')
 
 
 def get_pseudo_inverse(J):
@@ -84,11 +104,20 @@ def get_ik_angles(q, err, dt):
     return q_d
 
 
-# For testing purposes
+# run the code if the node is called
 if __name__ == '__main__':
-    q1 = [1, 1, 1, 1]
-    H = get_homogeneous_mat(q1)
-    print(H[:3, 3])
-    print(get_jacobian(q1))
-    J_p = get_ik_angles(q1[:3], H[:3, 3])
-    print(J_p)
+    try:
+        open_loop()
+    except rospy.ROSInterruptException:
+        pass
+
+
+
+# # For testing purposes
+# if __name__ == '__main__':
+#     q1 = [1, 1, 1]
+#     H = get_homogeneous_mat(q1)
+#     print(H[:3, 3])
+#     print(get_jacobian(q1))
+#     J_p = get_ik_angles(q1, H[:3, 3])
+#     print(J_p)
