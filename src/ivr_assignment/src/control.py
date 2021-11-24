@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 # import roslib
 # import sys
@@ -30,26 +31,20 @@ def get_homogeneous_mat(q):
 
     # Rotation on z axis
     As.append(np.array(
-        [[np.cos(q[0]), -np.sin(q[0]), 0, 0],
-         [np.sin(q[0]), np.cos(q[0]), 0, 0],
-         [0, 0, 1, 0],
-         [0, 0, 0, 1]]
+        [[np.cos(q[0]), -np.sin(q[0]), 0, 0], [np.sin(q[0]), np.cos(q[0]), 0, 0],
+         [0, 0, 1, 0], [0, 0, 0, 1]]
     ))
     # Rotation on x axis
     As.append(np.array(
-        [[1, 0, 0, 0],
-         [0, np.cos(q[2]), -np.sin(q[2]), 0],
-         [0, np.sin(q[2]), np.cos(q[2]), 4],
-         [0, 0, 0, 1]]
+        [[1, 0, 0, 0], [0, np.cos(q[2]), -np.sin(q[2]), 0],
+         [0, np.sin(q[2]), np.cos(q[2]), 4], [0, 0, 0, 1]]
     ))
     # Rotation on y axis
     As.append(np.array(
-        [[np.cos(q[3]), 0, np.sin(q[3]), 0],
-         [0, 1, 0, 0],
-         [-np.sin(q[3]), 0, np.cos(q[3]), 3.2],
-         [0, 0, 0, 1]]
+        [[np.cos(q[3]), 0, np.sin(q[3]), 0], [0, 1, 0, 0],
+         [-np.sin(q[3]), 0, np.cos(q[3]), 3.2], [0, 0, 0, 1]]
     ))
-    # Move to end effector
+    # Transform to the end effector
     As.append(np.array(
         [[1, 0, 0, 0],
          [0, 1, 0, 0],
@@ -64,7 +59,7 @@ def get_homogeneous_mat(q):
     return H
 
 
-def get_jacobian():
+def get_jacobian(q):
     # H = Matrix([[cos(alpha) * cos(gamma) - sin(alpha) * sin(beta) * sin(gamma), -sin(alpha) * cos(beta),
     #              cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma), 2.8 * sin(alpha) * sin(beta)],
     #             [sin(alpha) * cos(gamma) + cos(alpha) * sin(beta) * sin(gamma), cos(alpha) * cos(beta),
@@ -74,12 +69,26 @@ def get_jacobian():
     H = Matrix([3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
                 2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
                 2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
-    return H.jacobian(Matrix([alpha, beta, gamma]))
+    J = H.jacobian(Matrix([alpha, beta, gamma]))
+    return np.matrix(J.subs([(alpha, q[0]), (beta, q[1]), (gamma, q[2])]).evalf(), dtype='float')
+
+
+def get_pseudo_inverse(J):
+    return np.linalg.inv(J)
+
+
+def get_ik_angles(q, err, dt):
+    J = get_jacobian(q)
+    J_inv = get_pseudo_inverse(J)
+    q_d = q + (dt * np.dot(J_inv, err.T))
+    return q_d
 
 
 # For testing purposes
 if __name__ == '__main__':
-    q = [1, 1, 1, 1]
-    H = get_homogeneous_mat(q)
-    print(H)
-    print(get_jacobian())
+    q1 = [1, 1, 1, 1]
+    H = get_homogeneous_mat(q1)
+    print(H[:3, 3])
+    print(get_jacobian(q1))
+    J_p = get_ik_angles(q1[:3], H[:3, 3])
+    print(J_p)
