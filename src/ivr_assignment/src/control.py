@@ -71,7 +71,9 @@ def get_jacobian():
     #              sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma), -2.8 * cos(alpha) * sin(beta)],
     #             [-cos(beta) * sin(gamma), sin(beta), cos(beta) * cos(gamma), 2.8 * cos(beta) + 7.2],
     #             [0, 0, 0, 1]])
-    H = Matrix([2.8 * sin(alpha) * sin(beta), -2.8 * cos(alpha) * sin(beta), 2.8 * cos(beta) + 7.2])
+    H = Matrix([3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
+                2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
+                2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
     return H.jacobian(Matrix([alpha, beta, gamma]))
 
 
