@@ -26,27 +26,47 @@ from target import target_publisher
 #     a = 0
 #     d = 0
 
-def open_loop():
+def open_control():
 
     # Defines publisher and subscriber
     # initialize the node named
-    rospy.init_node('target_publisher', anonymous=True)
+    rospy.init_node('open_control', anonymous=True)
     rate = rospy.Rate(50)  # 50hz
 
-    # initialize publishers and subscribers for end effector target positions
-    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
-    # angle_1 = rospy.Subscriber("joint_angle_1", Float64MultiArray, )
-    # angle_3 = rospy.Subscriber("joint_angle_3", Float64MultiArray, )
-    # angle_4 = rospy.Subscriber("joint_angle_4", Float64MultiArray, )
-
-    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
-    target_pos_pub = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
+    # initialize publishers
 
     robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
-    robot_joint2_pub = rospy.Publisher("/robot/joint2_position_controller/command", Float64, queue_size=10)
     robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
+    robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
 
-    t0 = rospy.get_time()
+    H = get_homogeneous_mat([1, 1, 1])
+    tar_pos = H[:3, 3]
+
+    t1 = rospy.get_time()
+
+    while not rospy.is_shutdown():
+
+        target_pos = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
+        angle_1 = rospy.Subscriber("joint_angle_1", Float64MultiArray, )
+        angle_3 = rospy.Subscriber("joint_angle_3", Float64MultiArray, )
+        angle_4 = rospy.Subscriber("joint_angle_4", Float64MultiArray, )
+
+        cur_time = rospy.get_time()
+        dt = cur_time - t1
+        t1 = cur_time
+
+        cur_pos = get_end_effector()
+        err = target_pos - cur_pos
+        q_d = get_ik_angles([angle_1, angle_3, angle_4], err, dt)
+
+        robot_joint1_pub.publish(Float64(q_d[0]))
+        robot_joint3_pub.publish(Float64(q_d[1]))
+        robot_joint4_pub.publish(Float64(q_d[2]))
+        rate.sleep()
+
+
+def get_end_effector():
+    return [1, 1, 1]
 
 
 def get_homogeneous_mat(q):
@@ -107,7 +127,7 @@ def get_ik_angles(q, err, dt):
 # run the code if the node is called
 if __name__ == '__main__':
     try:
-        open_loop()
+        open_control()
     except rospy.ROSInterruptException:
         pass
 
