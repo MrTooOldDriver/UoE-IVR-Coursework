@@ -39,9 +39,6 @@ def open_control():
     robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
     robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
 
-    H = get_homogeneous_mat([1, 1, 1])
-    tar_pos = H[:3, 3]
-
     t1 = rospy.get_time()
 
     while not rospy.is_shutdown():
@@ -55,7 +52,7 @@ def open_control():
         dt = cur_time - t1
         t1 = cur_time
 
-        cur_pos = get_end_effector()
+        cur_pos = get_end_effector_pos()
         err = target_pos - cur_pos
         q_d = get_ik_angles([angle_1, angle_3, angle_4], err, dt)
 
@@ -65,7 +62,26 @@ def open_control():
         rate.sleep()
 
 
-def get_end_effector():
+def forward_kinematics(q):
+
+    # Defines publisher and subscriber
+    # initialize the node named
+    rospy.init_node('forward_kinematics', anonymous=True)
+    rate = rospy.Rate(50)  # 50hz
+
+    # initialize publishers
+
+    robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
+    robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
+    robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
+
+    while not rospy.is_shutdown():
+        robot_joint1_pub.publish(Float64(q[0]))
+        robot_joint3_pub.publish(Float64(q[1]))
+        robot_joint4_pub.publish(Float64(q[2]))
+
+
+def get_end_effector_pos():
     return [1, 1, 1]
 
 
@@ -75,11 +91,11 @@ def get_homogeneous_mat(q):
         [[np.cos(q[0]), -np.sin(q[0]), 0, 0], [np.sin(q[0]), np.cos(q[0]), 0, 0],
          [0, 0, 1, 0], [0, 0, 0, 1]]
     ), np.array(
-        [[1, 0, 0, 0], [0, np.cos(q[2]), -np.sin(q[2]), 0],
-         [0, np.sin(q[2]), np.cos(q[2]), 4], [0, 0, 0, 1]]
+        [[1, 0, 0, 0], [0, np.cos(q[1]), -np.sin(q[1]), 0],
+         [0, np.sin(q[1]), np.cos(q[1]), 4], [0, 0, 0, 1]]
     ), np.array(
-        [[np.cos(q[3]), 0, np.sin(q[3]), 0], [0, 1, 0, 0],
-         [-np.sin(q[3]), 0, np.cos(q[3]), 3.2], [0, 0, 0, 1]]
+        [[np.cos(q[2]), 0, np.sin(q[2]), 0], [0, 1, 0, 0],
+         [-np.sin(q[2]), 0, np.cos(q[2]), 3.2], [0, 0, 0, 1]]
     ), np.array(
         [[1, 0, 0, 0],
          [0, 1, 0, 0],
@@ -106,10 +122,13 @@ def get_jacobian(q):
     #              sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma), -2.8 * cos(alpha) * sin(beta)],
     #             [-cos(beta) * sin(gamma), sin(beta), cos(beta) * cos(gamma), 2.8 * cos(beta) + 7.2],
     #             [0, 0, 0, 1]])
-    H = Matrix([3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
+
+    # The 3-d location coordinate vector from homogeneous
+    O = Matrix([3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
                 2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
                 2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
-    J = H.jacobian(Matrix([alpha, beta, gamma]))
+    # Get jacobian matirx using sympy
+    J = O.jacobian(Matrix([alpha, beta, gamma]))
     return np.matrix(J.subs([(alpha, q[0]), (beta, q[2]), (gamma, q[3])]).evalf(), dtype='float')
 
 
@@ -124,10 +143,17 @@ def get_ik_angles(q, err, dt):
     return q_d
 
 
+OPEN_LOOP = False
+
 # run the code if the node is called
 if __name__ == '__main__':
     try:
-        open_control()
+        # Switch between FK and IK
+        if OPEN_LOOP:
+            open_control()
+        else:
+            # Set angles to test
+            forward_kinematics([0.32, 1.234, 0.123])
     except rospy.ROSInterruptException:
         pass
 
