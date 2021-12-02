@@ -15,12 +15,7 @@ class Vision1:
 
     # Defines publisher and subscriber
     def __init__(self):
-        # rostopic pub -l /robot/joint2_position_controller/command std_msgs/Float64 "data: 1.0"
-        # initialize the node
         rospy.init_node('vision1', anonymous=True)
-        # initialize a publisher to send images from camera1 to a topic named image_topic1
-        # self.image_pub1 = rospy.Publisher("image_topic1", Image, queue_size=1)
-        # initialize a subscriber to recieve messages rom a topic named /robot/camera1/image_raw and use callback function to recieve data
         self.image_sub1 = rospy.Subscriber("/camera1/robot/image_raw", Image, self.callback1)
         self.image_sub2 = rospy.Subscriber("/camera2/robot/image_raw", Image, self.callback2)
         self.join2_pub = rospy.Publisher("joint_angle_2", Float64, queue_size=10)
@@ -43,7 +38,7 @@ class Vision1:
         except CvBridgeError as e:
             print(e)
         if self.cv_image1 is not None and self.cv_image2 is not None:
-            self.test_function()
+            self.find_joint_angle()
 
     def callback2(self, data):
         try:
@@ -51,7 +46,7 @@ class Vision1:
         except CvBridgeError as e:
             print(e)
         if self.cv_image1 is not None and self.cv_image2 is not None:
-            self.test_function()
+            self.find_joint_angle()
 
     def detect_color_pos(self, cv_image, color):
         mask = cv2.inRange(cv_image, color[0], color[1])
@@ -125,7 +120,7 @@ class Vision1:
         joint4 = self.find_angle_between_2_vector(previous_joint_vector, previous_to_current_vector)
         return joint4
 
-    def test_function(self):
+    def find_joint_angle(self):
         im1_center, im1_yellow, im1_blue, im1_red = self.find_color_location(self.cv_image1)
         self.last_pos_1 = [im1_center, im1_yellow, im1_blue, im1_red]
         im2_center, im2_yellow, im2_blue, im2_red = self.find_color_location(self.cv_image2)
