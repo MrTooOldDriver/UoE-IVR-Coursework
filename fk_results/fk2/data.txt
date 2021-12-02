@@ -1,0 +1,4 @@
+Joints 1, 3, 4: [1.3, 1.5, 0.8]
+Calculated by FK: [5.48793985 0.56102432 4.36435168]
+Estimation from image: [5.183   0.852   3.60325]
+
