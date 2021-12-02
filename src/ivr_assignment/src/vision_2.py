@@ -19,7 +19,7 @@ class Vision2:
         self.join1_pub = rospy.Publisher("joint_angle_1", Float64, queue_size=10)
         self.join3_pub = rospy.Publisher("joint_angle_3", Float64, queue_size=10)
         self.join4_pub = rospy.Publisher("joint_angle_4", Float64, queue_size=10)
-        self.red_pub = rospy.Publisher("red", Float64MultiArray, queue_size=10)
+        self.red_pub = rospy.Publisher("end_effector", Float64MultiArray, queue_size=10)
         self.cv_image1 = None
         self.cv_image2 = None
         # initialize the bridge between openCV and ROS

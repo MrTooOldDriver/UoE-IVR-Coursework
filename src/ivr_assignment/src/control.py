@@ -70,7 +70,9 @@ def get_jacobian(q):
          2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
     # Get jacobian matirx using sympy
     J = O.jacobian(Matrix([alpha, beta, gamma]))
-    return np.matrix(J.subs([(alpha, q[0]), (beta, q[2]), (gamma, q[3])]).evalf(), dtype='float')
+    # print(J)
+    # print("_________________________________")
+    return np.matrix(J.subs([(alpha, q[0]), (beta, q[1]), (gamma, q[2])]).evalf(), dtype='float')
 
 
 def get_end_effector_pos(q):
@@ -78,13 +80,15 @@ def get_end_effector_pos(q):
 
 
 def get_pseudo_inverse(J):
-    return np.linalg.inv(J)
+    # return np.linalg.inv(J)
+    return np.matmul(J.T, np.linalg.inv(np.matmul(J, J.T)))
 
 
 def get_ik_angles(q, err, dt):
     J = get_jacobian(q)
     J_inv = get_pseudo_inverse(J)
     q_d = q + (dt * np.dot(J_inv, err.T))
+    # print(q_d)
     return q_d
 
 
@@ -96,8 +100,8 @@ class Control:
         #################  QUESTION SWITCH #################
         ####################################################
 
-        # The arg to select between Q1 (FK) and Q2 (IK)
-        self.OPEN_LOOP = False
+        # The arg to select between Q1 (FK/False) and Q2 (IK/True)
+        self.OPEN_LOOP = True
 
         ####################################################
         #################  QUESTION SWITCH #################
@@ -142,25 +146,31 @@ class Control:
 
         cur_pos = get_end_effector_pos(q)
 
-        print("Joints 1, 3, 4: " + str(q))
-        print("Calculated by FK: " + str(cur_pos))
-        print("Estimation from image: " + str(self.end_effector))
+        # print("Joints 1, 3, 4: " + str(q))
+        # print("Calculated by FK: " + str(cur_pos))
+        # print("Estimation from image: " + str(self.end_effector))
 
     def open_control(self):
-        cur_time = rospy.get_time()
-        dt = cur_time - self.t1
-        self.t1 = cur_time
+        try:
+            cur_time = rospy.get_time()
+            dt = cur_time - self.t1
+            self.t1 = cur_time
 
-        q = [self.joint1, self.joint3, self.joint4]
-        cur_pos = get_end_effector_pos(q)
+            q = [self.joint1, self.joint3, self.joint4]
+            cur_pos = get_end_effector_pos(q)
 
-        target_pos = np.array(self.target_pos)
-        err = target_pos - cur_pos
-        q_d = get_ik_angles(q, err, dt)
+            target_pos = np.array(self.target_pos)
+            err = target_pos - cur_pos
+            q_d = get_ik_angles(q, err, dt)
 
-        self.robot_joint1_pub.publish(Float64(q_d[0]))
-        self.robot_joint3_pub.publish(Float64(q_d[1]))
-        self.robot_joint4_pub.publish(Float64(q_d[2]))
+            print(err)
+            q_d = np.squeeze(np.asarray(q_d))
+
+            self.robot_joint1_pub.publish(Float64(q_d[0]))
+            self.robot_joint3_pub.publish(Float64(q_d[1]))
+            self.robot_joint4_pub.publish(Float64(q_d[2]))
+        except:
+            pass
 
     def control_main(self):
         # Switch between Q1 (FK) and Q2 (IK)
