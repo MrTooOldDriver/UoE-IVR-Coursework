@@ -94,10 +94,11 @@ class Vision2:
     def calculate_angle_to_x_y_plane(self, vector):
         [x, y, z] = vector
         xy_plane_projection = [x, y, 0]
-        joint1 = self.find_angle_between_2_vector([0, 1, 0], xy_plane_projection)
+        joint1 = -self.find_angle_between_2_vector([0, 1, 0], xy_plane_projection)
+        if x < 0:
+            joint1 = -joint1
 
-        #todo untested
-        joint3_projection_vector = [np.sin(joint1),0, np.cos(joint1)]
+        joint3_projection_vector = [0, 0, 1]
         joint3 = -self.find_angle_between_2_vector(joint3_projection_vector, vector)
         if y < 0:
             joint3 = -joint3
