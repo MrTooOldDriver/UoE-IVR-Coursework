@@ -38,7 +38,7 @@ class Vision2:
         except CvBridgeError as e:
             print(e)
         if self.cv_image1 is not None and self.cv_image2 is not None:
-            self.test_function()
+            self.calculate_joint_angle()
 
     def callback2(self, data):
         try:
@@ -46,11 +46,10 @@ class Vision2:
         except CvBridgeError as e:
             print(e)
         if self.cv_image1 is not None and self.cv_image2 is not None:
-            self.test_function()
+            self.calculate_joint_angle()
 
     def detect_color_pos(self, cv_image, color, pervious_pos):
         mask = cv2.inRange(cv_image, color[0], color[1])
-        # print('mask_area={0} {1}'.format(np.sum(mask), color[1]))
         kernel = np.ones((8, 8), np.uint8)
         mask = cv2.dilate(mask, kernel, iterations=3)
         M = cv2.moments(mask)
@@ -105,21 +104,17 @@ class Vision2:
         joint4 = self.find_angle_between_2_vector(previous_joint_vector, previous_to_current_vector)
         return joint4
 
-    def test_function(self):
+    def calculate_joint_angle(self):
         im1_center, im1_yellow, im1_blue, im1_red = self.find_color_location_new(self.cv_image1, self.last_pos_1)
         self.last_pos_1 = [im1_center, im1_yellow, im1_blue, im1_red]
         im2_center, im2_yellow, im2_blue, im2_red = self.find_color_location_new(self.cv_image2, self.last_pos_2)
         self.last_pos_2 = [im2_center, im2_yellow, im2_blue, im2_red]
         yellow_blue_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_blue, im2_blue)
         joint3, joint1 = self.calculate_angle_to_x_y_plane(yellow_blue_vector)
-
         yellow_red_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_red, im2_red)
         joint4 = self.calculate_angle_to_previous_joint(yellow_blue_vector, yellow_red_vector, joint3, joint1)
-
         red_coord = Float64MultiArray()
         red_coord.data = self.calculate_3d_pos(im1_center, im2_center, im1_red, im2_red)
-
-
         self.join1_pub.publish(Float64(joint1))
         self.join3_pub.publish(Float64(joint3))
         self.join4_pub.publish(Float64(joint4))
