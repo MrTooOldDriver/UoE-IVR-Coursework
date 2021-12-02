@@ -26,66 +26,6 @@ from target import target_publisher
 #     a = 0
 #     d = 0
 
-def open_control():
-    # Defines publisher and subscriber
-    # initialize the node named
-    rospy.init_node('open_control', anonymous=True)
-    rate = rospy.Rate(50)  # 50hz
-
-    # initialize publishers
-
-    robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
-    robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
-    robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
-
-    t1 = rospy.get_time()
-
-    while not rospy.is_shutdown():
-        target_pos = rospy.Subscriber("target_pos", Float64MultiArray, target_publisher)
-        angle_1 = rospy.Subscriber("joint_angle_1", Float64MultiArray, )
-        angle_3 = rospy.Subscriber("joint_angle_3", Float64MultiArray, )
-        angle_4 = rospy.Subscriber("joint_angle_4", Float64MultiArray, )
-
-        cur_time = rospy.get_time()
-        dt = cur_time - t1
-        t1 = cur_time
-
-        q = [angle_1, angle_3, angle_4]
-        cur_pos = get_end_effector_pos(q)
-
-        err = target_pos - cur_pos
-        q_d = get_ik_angles(q, err, dt)
-
-        robot_joint1_pub.publish(Float64(q_d[0]))
-        robot_joint3_pub.publish(Float64(q_d[1]))
-        robot_joint4_pub.publish(Float64(q_d[2]))
-        rate.sleep()
-
-
-def forward_kinematics():
-    # Defines publisher and subscriber
-    # initialize the node named
-    rospy.init_node('forward_kinematics', anonymous=True)
-    rate = rospy.Rate(50)  # 50hz
-
-    # initialize publishers
-
-    # robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
-    # robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
-    # robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
-
-    angle_1 = rospy.Subscriber("joint_angle_1", Float64MultiArray, )
-    angle_3 = rospy.Subscriber("joint_angle_3", Float64MultiArray, )
-    angle_4 = rospy.Subscriber("joint_angle_4", Float64MultiArray, )
-
-    q = [angle_1, angle_3, angle_4]
-    cur_pos = get_end_effector_pos(q)
-
-
-def get_end_effector_pos(q):
-    return get_homogeneous_mat(q)[:3, 3]
-
-
 def get_homogeneous_mat(q):
     As = [np.array(
         [[np.cos(q[0]), -np.sin(q[0]), 0, 0], [np.sin(q[0]), np.cos(q[0]), 0, 0],
@@ -124,12 +64,17 @@ def get_jacobian(q):
     #             [0, 0, 0, 1]])
 
     # The 3-d location coordinate vector from homogeneous
-    O = Matrix([3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
-                2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
-                2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
+    O = Matrix(
+        [3.2 * sin(alpha) * sin(beta) + 2.8 * (cos(alpha) * sin(gamma) + sin(alpha) * sin(beta) * cos(gamma)),
+         2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
+         2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
     # Get jacobian matirx using sympy
     J = O.jacobian(Matrix([alpha, beta, gamma]))
     return np.matrix(J.subs([(alpha, q[0]), (beta, q[2]), (gamma, q[3])]).evalf(), dtype='float')
+
+
+def get_end_effector_pos(q):
+    return get_homogeneous_mat(q)[:3, 3]
 
 
 def get_pseudo_inverse(J):
@@ -143,18 +88,103 @@ def get_ik_angles(q, err, dt):
     return q_d
 
 
+class Control:
+
+    def __init__(self):
+
+        # The arg to select between Q1 (FK) and Q2 (IK)
+        self.OPEN_LOOP = False
+
+        # Defines publisher and subscriber
+        # initialize the node named
+        rospy.init_node('control', anonymous=True)
+        rate = rospy.Rate(50)  # 50hz
+        self.t1 = rospy.get_time()
+
+        self.joint1 = 0
+        self.joint3 = 0
+        self.joint4 = 0
+        self.target_pos = np.array([0, 0, 0])
+
+        # initialize publishers
+        rospy.Subscriber("target_pos", Float64MultiArray, self.target_pos_callback)
+        rospy.Subscriber("joint_angle_1", Float64MultiArray, self.joint_1_callback)
+        rospy.Subscriber("joint_angle_3", Float64MultiArray, self.joint_3_callback)
+        rospy.Subscriber("joint_angle_4", Float64MultiArray, self.joint_4_callback)
+
+        self.robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
+        self.robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
+        self.robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
+
+    def forward_kinematics(self):
+        # Defines publisher and subscriber
+        # initialize the node named
+        # rospy.init_node('forward_kinematics', anonymous=True)
+        # rate = rospy.Rate(50)  # 50hz
+
+        # initialize publishers
+
+        # robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
+        # robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
+        # robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
+
+        # rospy.Subscriber("joint_angle_1", Float64MultiArray, self.joint_1_callback)
+        # rospy.Subscriber("joint_angle_3", Float64MultiArray, self.joint_3_callback)
+        # rospy.Subscriber("joint_angle_4", Float64MultiArray, self.joint_4_callback)
+
+        q = [self.joint1, self.joint3, self.joint4]
+        cur_pos = get_end_effector_pos(q)
+        print(cur_pos)
+
+    def open_control(self):
+        cur_time = rospy.get_time()
+        dt = cur_time - self.t1
+        self.t1 = cur_time
+
+        q = [self.joint1, self.joint3, self.joint4]
+        cur_pos = get_end_effector_pos(q)
+
+        target_pos = np.array(self.target_pos)
+        err = target_pos - cur_pos
+        q_d = get_ik_angles(q, err, dt)
+
+        self.robot_joint1_pub.publish(Float64(q_d[0]))
+        self.robot_joint3_pub.publish(Float64(q_d[1]))
+        self.robot_joint4_pub.publish(Float64(q_d[2]))
+
+    def control_main(self):
+        # Switch between Q1 (FK) and Q2 (IK)
+        if self.OPEN_LOOP:
+            self.open_control()
+        else:
+            self.forward_kinematics()
+
+    def joint_1_callback(self, data):
+        self.joint1 = data
+        self.control_main()
+
+    def joint_3_callback(self, data):
+        self.joint3 = data
+        self.control_main()
+
+    def joint_4_callback(self, data):
+        self.joint4 = data
+        self.control_main()
+
+    def target_pos_callback(self, data):
+        self.target_pos = data
+        self.control_main()
+
+
 OPEN_LOOP = False
 
 # run the code if the node is called
 if __name__ == '__main__':
+    ic = Control()
     try:
-        # Switch between Q1 and Q2
-        if OPEN_LOOP:
-            open_control()
-        else:
-            # To verify FK calculations and plot
-            forward_kinematics()
-            print("ASDASDASDASD")
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down control")
     except rospy.ROSInterruptException:
         pass
 
