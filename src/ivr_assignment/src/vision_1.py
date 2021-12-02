@@ -31,6 +31,7 @@ class Vision1:
         self.blue = [(100, 0, 0), (255, 0, 0)]
         self.green = [(0, 100, 0), (0, 255, 0)]
         self.pixel2meter_average = 0.0355
+        self.last_vector = None
 
     def callback1(self, data):
         try:
