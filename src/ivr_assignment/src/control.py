@@ -98,7 +98,7 @@ class Control:
         # Defines publisher and subscriber
         # initialize the node named
         rospy.init_node('control', anonymous=True)
-        rate = rospy.Rate(50)  # 50hz
+        # rate = rospy.Rate(50)  # 50hz
         self.t1 = rospy.get_time()
 
         self.joint1 = 0
@@ -107,14 +107,16 @@ class Control:
         self.target_pos = np.array([0, 0, 0])
 
         # initialize publishers
-        rospy.Subscriber("target_pos", Float64MultiArray, self.target_pos_callback)
-        rospy.Subscriber("joint_angle_1", Float64MultiArray, self.joint_1_callback)
-        rospy.Subscriber("joint_angle_3", Float64MultiArray, self.joint_3_callback)
-        rospy.Subscriber("joint_angle_4", Float64MultiArray, self.joint_4_callback)
+
+        self.target_pos_sub = rospy.Subscriber("target_pos", Float64MultiArray, self.target_pos_callback)
 
         self.robot_joint1_pub = rospy.Publisher("/robot/joint1_position_controller/command", Float64, queue_size=10)
         self.robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
         self.robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
+
+        self.joint1_sub = rospy.Subscriber("joint_angle_1", Float64, self.joint_1_callback)
+        self.joint3_sub = rospy.Subscriber("joint_angle_3", Float64, self.joint_3_callback)
+        self.joint4_sub = rospy.Subscriber("joint_angle_4", Float64, self.joint_4_callback)
 
     def forward_kinematics(self):
         # Defines publisher and subscriber
@@ -134,7 +136,7 @@ class Control:
 
         q = [self.joint1, self.joint3, self.joint4]
         cur_pos = get_end_effector_pos(q)
-        print(cur_pos)
+        print("FK: " + str(cur_pos))
 
     def open_control(self):
         cur_time = rospy.get_time()
@@ -160,15 +162,15 @@ class Control:
             self.forward_kinematics()
 
     def joint_1_callback(self, data):
-        self.joint1 = data
+        self.joint1 = data.data
         self.control_main()
 
     def joint_3_callback(self, data):
-        self.joint3 = data
+        self.joint3 = data.data
         self.control_main()
 
     def joint_4_callback(self, data):
-        self.joint4 = data
+        self.joint4 = data.data
         self.control_main()
 
     def target_pos_callback(self, data):
@@ -176,17 +178,13 @@ class Control:
         self.control_main()
 
 
-OPEN_LOOP = False
-
 # run the code if the node is called
 if __name__ == '__main__':
     ic = Control()
     try:
         rospy.spin()
-    except KeyboardInterrupt:
-        print("Shutting down control")
     except rospy.ROSInterruptException:
-        pass
+        print("Shutting down control")
 
 # # For testing purposes
 # if __name__ == '__main__':
