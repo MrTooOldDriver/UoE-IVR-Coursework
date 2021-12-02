@@ -81,8 +81,6 @@ def forward_kinematics():
     q = [angle_1, angle_3, angle_4]
     cur_pos = get_end_effector_pos(q)
 
-    # TODO: Output calculation results and plot table to verify
-
 
 def get_end_effector_pos(q):
     return get_homogeneous_mat(q)[:3, 3]
@@ -145,7 +143,7 @@ def get_ik_angles(q, err, dt):
     return q_d
 
 
-OPEN_LOOP = True
+OPEN_LOOP = False
 
 # run the code if the node is called
 if __name__ == '__main__':
@@ -156,6 +154,7 @@ if __name__ == '__main__':
         else:
             # To verify FK calculations and plot
             forward_kinematics()
+            print("ASDASDASDASD")
     except rospy.ROSInterruptException:
         pass
 

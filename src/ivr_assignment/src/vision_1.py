@@ -23,9 +23,9 @@ class Vision1:
         # initialize a subscriber to recieve messages rom a topic named /robot/camera1/image_raw and use callback function to recieve data
         self.image_sub1 = rospy.Subscriber("/camera1/robot/image_raw", Image, self.callback1)
         self.image_sub2 = rospy.Subscriber("/camera2/robot/image_raw", Image, self.callback2)
-        self.join2_pub = rospy.Publisher("join2", Float64, queue_size=10)
-        self.join3_pub = rospy.Publisher("join3", Float64, queue_size=10)
-        self.join4_pub = rospy.Publisher("join4", Float64, queue_size=10)
+        self.join2_pub = rospy.Publisher("joint_angle_2", Float64, queue_size=10)
+        self.join3_pub = rospy.Publisher("joint_angle_3", Float64, queue_size=10)
+        self.join4_pub = rospy.Publisher("joint_angle_4", Float64, queue_size=10)
         self.red_pub = rospy.Publisher("red", Float64MultiArray, queue_size=10)
         self.cv_image1 = None
         self.cv_image2 = None
