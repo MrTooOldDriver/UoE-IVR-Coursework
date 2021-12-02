@@ -80,8 +80,8 @@ def get_end_effector_pos(q):
 
 
 def get_pseudo_inverse(J):
-    # return np.linalg.inv(J)
-    return np.matmul(J.T, np.linalg.inv(np.matmul(J, J.T)))
+    return np.linalg.inv(J)
+    # return np.matmul(J.T, np.linalg.inv(np.matmul(J, J.T)))
 
 
 def get_ik_angles(q, err, dt):
@@ -127,9 +127,17 @@ class Control:
         self.robot_joint3_pub = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
         self.robot_joint4_pub = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
 
+        self.true_ef_x_pub = rospy.Publisher("true_ef_x", Float64, queue_size=10)
+        self.true_ef_y_pub = rospy.Publisher("true_ef_y", Float64, queue_size=10)
+        self.true_ef_z_pub = rospy.Publisher("true_ef_z", Float64, queue_size=10)
+        self.tar_ef_x_pub = rospy.Publisher("tar_ef_x", Float64, queue_size=10)
+        self.tar_ef_y_pub = rospy.Publisher("tar_ef_y", Float64, queue_size=10)
+        self.tar_ef_z_pub = rospy.Publisher("tar_ef_z", Float64, queue_size=10)
+
         self.joint1_sub = rospy.Subscriber("joint_angle_1", Float64, self.joint_1_callback)
         self.joint3_sub = rospy.Subscriber("joint_angle_3", Float64, self.joint_3_callback)
         self.joint4_sub = rospy.Subscriber("joint_angle_4", Float64, self.joint_4_callback)
+        
         self.end_effector_sub = rospy.Subscriber("end_effector", Float64MultiArray, self.end_effector_callback)
 
     def forward_kinematics(self):
@@ -163,12 +171,19 @@ class Control:
             err = target_pos - cur_pos
             q_d = get_ik_angles(q, err, dt)
 
-            print(err)
+            print("Error from target: " + str(err))
             q_d = np.squeeze(np.asarray(q_d))
 
             self.robot_joint1_pub.publish(Float64(q_d[0]))
             self.robot_joint3_pub.publish(Float64(q_d[1]))
             self.robot_joint4_pub.publish(Float64(q_d[2]))
+
+            self.true_ef_x_pub.publish(Float64(cur_pos[0]))
+            self.tar_ef_x_pub.publish(Float64(target_pos[0]))
+            self.true_ef_y_pub.publish(Float64(cur_pos[1]))
+            self.tar_ef_y_pub.publish(Float64(target_pos[1]))
+            self.true_ef_z_pub.publish(Float64(cur_pos[2]))
+            self.tar_ef_z_pub.publish(Float64(target_pos[2]))
         except:
             pass
 
