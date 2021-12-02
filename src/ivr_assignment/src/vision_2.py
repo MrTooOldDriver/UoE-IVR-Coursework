@@ -97,12 +97,13 @@ class Vision2:
         joint1 = -self.find_angle_between_2_vector([0, 1, 0], xy_plane_projection)
         if x < 0:
             joint1 = -joint1
-
-        joint3_projection_vector = [0, 0, 1]
-        joint3 = -self.find_angle_between_2_vector(joint3_projection_vector, vector)
-        if y < 0:
-            joint3 = -joint3
+        joint3 = self.find_angle_between_2_vector([0, 0, 1], vector)
         return joint3, joint1
+
+    def calculate_angle_to_previous_joint(self, previous_joint_vector, current_joint_vector, x_angle, y_angle):
+        previous_to_current_vector = current_joint_vector - previous_joint_vector
+        joint4 = self.find_angle_between_2_vector(previous_joint_vector, previous_to_current_vector)
+        return joint4
 
     def test_function(self):
         im1_center, im1_yellow, im1_blue, im1_red = self.find_color_location_new(self.cv_image1, self.last_pos_1)
@@ -112,9 +113,8 @@ class Vision2:
         yellow_blue_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_blue, im2_blue)
         joint3, joint1 = self.calculate_angle_to_x_y_plane(yellow_blue_vector)
 
-        # yellow_red_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_red, im2_red)
-        # joint4 = self.calculate_angle_to_previous_joint(yellow_blue_vector, yellow_red_vector, joint3, joint2)
-        # print('test={0}'.format(self.find_angle_between_2_vector_signed(yellow_red_vector, yellow_blue_vector)))
+        yellow_red_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_red, im2_red)
+        joint4 = self.calculate_angle_to_previous_joint(yellow_blue_vector, yellow_red_vector, joint3, joint1)
 
         red_coord = Float64MultiArray()
         red_coord.data = self.calculate_3d_pos(im1_center, im2_center, im1_red, im2_red)
@@ -122,9 +122,9 @@ class Vision2:
 
         self.join1_pub.publish(Float64(joint1))
         self.join3_pub.publish(Float64(joint3))
-        # self.join4_pub.publish(Float64(joint4))
+        self.join4_pub.publish(Float64(joint4))
         self.red_pub.publish(red_coord)
-        print('joint1={0} joint3={1} joint4={2}'.format(joint1, joint3, 0))
+        print('joint1={0} joint3={1} joint4={2}'.format(joint1, joint3, joint4))
         # rostopic pub -1 /robot/joint2_position_controller/command std_msgs/Float64 "data: 1.0"
         # rostopic pub -1 /robot/joint3_position_controller/command std_msgs/Float64 "data: 0.0"
         # rostopic pub -1 /robot/joint4_position_controller/command std_msgs/Float64 "data: 0.0"
