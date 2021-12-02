@@ -26,7 +26,37 @@ from target import target_publisher
 #     a = 0
 #     d = 0
 
+
+def get_homogeneous_mat_q21(q):
+    # Rotation on y axis
+    # Rotation on x axis
+    # Transform to the blue
+    As = [np.array(
+        [[np.cos(q[0]), 0, np.sin(q[0]), 0], [0, 1, 0, 0],
+         [-np.sin(q[0]), 0, np.cos(q[0]), 0], [0, 0, 0, 1]]
+    ), np.array(
+        [[1, 0, 0, 0], [0, np.cos(q[1]), -np.sin(q[1]), 0],
+         [0, np.sin(q[1]), np.cos(q[1]), 0], [0, 0, 0, 1]]
+    ), np.array(
+        [[1, 0, 0, 0],
+         [0, 1, 0, 0],
+         [0, 0, 1, 3.2],
+         [0, 0, 0, 1]]
+    )]
+
+    H = As[0]
+    for i in range(1, len(As)):
+        H = np.matmul(H, As[i])
+
+    return H
+
+
 def get_homogeneous_mat(q):
+
+    # Rotation on z axis
+    # Rotation on x axis
+    # Rotation on y axis
+    # Transform to the end effector
     As = [np.array(
         [[np.cos(q[0]), -np.sin(q[0]), 0, 0], [np.sin(q[0]), np.cos(q[0]), 0, 0],
          [0, 0, 1, 0], [0, 0, 0, 1]]
@@ -42,11 +72,6 @@ def get_homogeneous_mat(q):
          [0, 0, 1, 2.8],
          [0, 0, 0, 1]]
     )]
-
-    # Rotation on z axis
-    # Rotation on x axis
-    # Rotation on y axis
-    # Transform to the end effector
 
     H = As[0]
     for i in range(1, len(As)):
