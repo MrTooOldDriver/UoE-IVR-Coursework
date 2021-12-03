@@ -28,7 +28,9 @@ class Vision2:
         self.yellow = [(0, 100, 100), (0, 255, 255)]
         self.blue = [(100, 0, 0), (255, 0, 0)]
         self.green = [(0, 100, 0), (0, 255, 0)]
-        self.pixel2meter_average = 0.0355 # Pre calculate pixel2meter value
+        self.last_pos_1 = [[0, 0], [0, 0], [0, 0], [0, 0]]
+        self.last_pos_2 = [[0, 0], [0, 0], [0, 0], [0, 0]]
+        self.pixel2meter_average = 0.0355
 
     def callback1(self, data):
         try:
@@ -52,6 +54,7 @@ class Vision2:
         mask = cv2.dilate(mask, kernel, iterations=3)
         M = cv2.moments(mask)
         if M['m00'] == 0:
+            print(pervious_pos)
             return np.array([None, None])
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
@@ -74,7 +77,6 @@ class Vision2:
         return green, yellow, blue, red
 
     def calculate_3d_pos(self, im1_center, im2_center, im1_pos, im2_pos):
-        # combining the two images to get the 3d coordinates
         pos_in_cam1 = im1_center - im1_pos
         pos_in_cam2 = im2_center - im2_pos
         x = -pos_in_cam2[0]
@@ -91,33 +93,26 @@ class Vision2:
     def calculate_angle_to_x_y_plane(self, vector):
         [x, y, z] = vector
         xy_plane_projection = [x, y, 0]
-        #joint1 is angle between vector xy_plane_projection and positive y axis unit vector
         joint1 = -self.find_angle_between_2_vector([0, 1, 0], xy_plane_projection)
         if x < 0:
             joint1 = -joint1
-        # joint1 is angle between positive z axis unit vector and current vector
         joint3 = self.find_angle_between_2_vector([0, 0, 1], vector)
         return joint3, joint1
 
     def calculate_angle_to_previous_joint(self, previous_joint_vector, current_joint_vector, x_angle, y_angle):
-        # Find blue red vector
         previous_to_current_vector = current_joint_vector - previous_joint_vector
         joint4 = self.find_angle_between_2_vector(previous_joint_vector, previous_to_current_vector)
         return joint4
 
     def calculate_joint_angle(self):
-        # Fing sphere location on each image
         im1_center, im1_yellow, im1_blue, im1_red = self.find_color_location_new(self.cv_image1, self.last_pos_1)
+        self.last_pos_1 = [im1_center, im1_yellow, im1_blue, im1_red]
         im2_center, im2_yellow, im2_blue, im2_red = self.find_color_location_new(self.cv_image2, self.last_pos_2)
-        # Find yellow blue vector
+        self.last_pos_2 = [im2_center, im2_yellow, im2_blue, im2_red]
         yellow_blue_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_blue, im2_blue)
-        # Calculate joint3 and joint1
         joint3, joint1 = self.calculate_angle_to_x_y_plane(yellow_blue_vector)
-        # Find yellow red vector
         yellow_red_vector = self.calculate_3d_pos(im1_yellow, im2_yellow, im1_red, im2_red)
-        # Calculate join4
         joint4 = self.calculate_angle_to_previous_joint(yellow_blue_vector, yellow_red_vector, joint3, joint1)
-        # Output end effector position for section3
         red_coord = Float64MultiArray()
         red_coord.data = self.calculate_3d_pos(im1_center, im2_center, im1_red, im2_red)
         self.join1_pub.publish(Float64(joint1))
