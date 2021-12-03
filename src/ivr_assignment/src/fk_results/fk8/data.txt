@@ -1,0 +1,3 @@
+Joints 1, 3, 4: [2.8, 2, 1]
+Estimation from image: [-0.4615   4.828    3.70975]
+Calculated by FK: [-0.78443649  4.82705184  2.03876386]
