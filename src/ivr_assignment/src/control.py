@@ -73,7 +73,7 @@ def get_jacobian(q):
          2.8 * (sin(alpha) * sin(gamma) - cos(alpha) * sin(beta) * cos(gamma)) - 3.2 * cos(alpha) * sin(beta),
          2.8 * cos(beta) * cos(gamma) + 3.2 * cos(beta) + 4])
 
-    # Get jacobian matirx using sympy
+    # Get Jacobian matrix using sympy
     J = O.jacobian(Matrix([alpha, beta, gamma]))
     return np.matrix(J.subs([(alpha, q[0]), (beta, q[1]), (gamma, q[2])]).evalf(), dtype='float')
 
@@ -108,7 +108,6 @@ class Control:
         #################  QUESTION SWITCH #################
         ####################################################
 
-        # Defines publisher and subscriber
         # initialize the node named
         rospy.init_node('control', anonymous=True)
         self.rate = rospy.Rate(50)  # 50hz
@@ -120,7 +119,7 @@ class Control:
         self.end_effector = np.array([0, 0, 0])
         self.target_pos = np.array([0, 0, 0])
 
-        # initialize publishers
+        # initialize publishers and subscribers
 
         self.target_pos_sub = rospy.Subscriber("target_pos", Float64MultiArray, self.target_pos_callback)
 
@@ -157,9 +156,9 @@ class Control:
 
         cur_pos = get_end_effector_pos(q)
 
-        # print("Joints 1, 3, 4: " + str(q))
-        # print("Calculated by FK: " + str(cur_pos))
-        # print("Estimation from image: " + str(self.end_effector))
+        print("Joints 1, 3, 4: " + str(q))
+        print("Calculated by FK: " + str(cur_pos))
+        print("Estimation from image: " + str(self.end_effector))
 
     def inverse_kinematics(self):
         try:
