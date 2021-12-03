@@ -28,8 +28,6 @@ class Vision2:
         self.yellow = [(0, 100, 100), (0, 255, 255)]
         self.blue = [(100, 0, 0), (255, 0, 0)]
         self.green = [(0, 100, 0), (0, 255, 0)]
-        self.last_pos_1 = [[0, 0], [0, 0], [0, 0], [0, 0]]
-        self.last_pos_2 = [[0, 0], [0, 0], [0, 0], [0, 0]]
         self.pixel2meter_average = 0.0355 # Pre calculate pixel2meter value
 
     def callback1(self, data):
@@ -54,7 +52,6 @@ class Vision2:
         mask = cv2.dilate(mask, kernel, iterations=3)
         M = cv2.moments(mask)
         if M['m00'] == 0:
-            print(pervious_pos)
             return np.array([None, None])
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
