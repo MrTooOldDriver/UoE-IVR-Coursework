@@ -123,8 +123,8 @@ class Vision2:
         # rostopic pub -1 /robot/joint2_position_controller/command std_msgs/Float64 "data: 1.0"
         # rostopic pub -1 /robot/joint3_position_controller/command std_msgs/Float64 "data: 0.0"
         # rostopic pub -1 /robot/joint4_position_controller/command std_msgs/Float64 "data: 0.0"
-        cv2.imwrite('im1.png', self.cv_image1)
-        cv2.imwrite('im2.png', self.cv_image2)
+        # cv2.imwrite('im1.png', self.cv_image1)
+        # cv2.imwrite('im2.png', self.cv_image2)
 
 # call the class
 def main(args):
